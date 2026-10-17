@@ -76,8 +76,46 @@ let S,page='dash',tab='f',flt='today',qs='',cf='',ct='',nav=false,mem,cart={},ce
 const t=k=>(T[S.lang]||en)[k]||en[k]||k,uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const m=x=>S.cur+' '+Number(x||0).toLocaleString();
 const dbo=()=>new Promise((r,j)=>{const q=indexedDB.open('obms',1);q.onupgradeneeded=()=>q.result.createObjectStore('k');q.onsuccess=()=>r(q.result);q.onerror=j});
-async function load(){try{const d=await dbo();return await new Promise(r=>{const g=d.transaction('k').objectStore('k').get('s');g.onsuccess=()=>r(g.result);g.onerror=()=>r()})}catch(e){return mem}}
-async function save(){mem=S;try{const d=await dbo();d.transaction('k','readwrite').objectStore('k').put(S,'s')}catch(e){}}
+async function save(){
+  mem=S;
+  try{const d=await dbo();d.transaction('k','readwrite').objectStore('k').put(S,'s')}catch(e){}
+  // Background push to server
+  if(navigator.onLine){
+    fetch('/api/sync/push',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'orders',records:S.orders})}).catch(()=>{});
+    fetch('/api/sync/push',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'purchases',records:S.purch})}).catch(()=>{});
+  }
+}
+async function pullTransactions(){
+  try{
+    const r = await fetch('/api/sync/pull');
+    const j = await r.json();
+    if(j.ok){
+      let changed = false;
+      // Merge orders safely
+      if(j.orders && j.orders.length){
+        j.orders.forEach(ro => {
+          const local = S.orders.find(o => o.id === ro.id);
+          const remote = JSON.parse(ro.data);
+          if(!local){ S.orders.push(remote); changed=true; }
+        });
+      }
+      // Merge purchases safely
+      if(j.purch && j.purch.length){
+        j.purch.forEach(rp => {
+          const local = S.purch.find(p => p.id === rp.id);
+          const remote = JSON.parse(rp.data);
+          if(!local){ S.purch.push(remote); changed=true; }
+        });
+      }
+      if(changed){
+        S.orders.sort((a,b)=>b.ts-a.ts); // Newest first
+        S.purch.sort((a,b)=>b.ts-a.ts);
+        const d=await dbo();d.transaction('k','readwrite').objectStore('k').put(S,'s');
+        draw();
+      }
+    }
+  }catch(e){}
+}
 const def=()=>({office:'Edusoft System Solutions',lang:'ur',dark:'n',th:'blue',cur:'Rs.',boy:'b1',emp:[],foods:[{id:'f1',n:'Biryani',p:250,a:1},{id:'f2',n:'Burger',p:300,a:1},{id:'f3',n:'Shawarma',p:220,a:1},{id:'f4',n:'Tea',p:80,a:1}],boys:[{id:'b1',n:'M. Shahid',ph:'',a:1}],orders:[],purch:[],on:0,pn:0});
 function stamp(md,mt){const d=md?new Date(md+'T'+(mt||new Date().toTimeString().slice(0,5))):new Date(),l=S.lang==='en'?'en-GB':'ur-PK';const p=n=>String(n).padStart(2,'0');return{ts:d.getTime(),date:d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()),day:d.toLocaleDateString(l,{weekday:'long'}),time:d.toLocaleTimeString(l,{hour:'numeric',minute:'2-digit'}),boy:S.boy}}
 const boyName=id=>(S.boys.find(b=>b.id===id)||{}).n||'-';
