@@ -56,7 +56,7 @@ img.bill{max-width:100%;border-radius:12px}
 .pt{padding:0;overflow:hidden;text-align:center;min-width:0;overflow-wrap:anywhere;line-height:1.25}.pt img,.pt .ph{width:100%;height:92px;object-fit:cover;display:flex;align-items:center;justify-content:center;font-size:42px;background:var(--b)}.pt>div:last-child{padding:6px}
 .th{width:48px;height:48px;object-fit:cover;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--b)}.row>.th{flex:none}
 pre.slip{white-space:pre-wrap;font:15px/1.6 monospace;background:var(--bg);padding:12px;border-radius:12px}
-#pr{display:none}@media print{body>*:not(#pr){display:none!important}#pr{display:block}#pr pre{font:15px/1.6 monospace;white-space:pre-wrap;width:72mm;color:#000}}
+#pr{display:none}@media print{body>*:not(#pr){display:none!important}#pr{display:block}#pr pre{white-space:pre-wrap;color:#000;margin:0 auto}#pr.simple pre{font:12px/1.4 monospace;width:50mm}#pr.pro pre{font:15px/1.6 monospace;width:72mm}#pr.detailed pre{font:14px/1.8 sans-serif;width:100%;max-width:210mm}}
 [data-go]{cursor:pointer}
 body{font-weight:700}label{color:var(--t);font-weight:800}.m{font-weight:600}button,h2{font-weight:800}
 input,select,textarea{font-weight:800;font-size:19px;min-height:54px;border:2px solid var(--m);box-shadow:0 2px 0 #0002}
@@ -155,7 +155,7 @@ ${acts&&!o.x&&!isDone(o)?`<div class="row"><button data-a="eo" data-id="${o.id}"
 function pCard(p,acts=true){const s=pst(p);return`<div class="card"><b>${esc(p.i)}</b> ${chip(s)}<div class="m">#${p.no} · ${esc(p.date)} · ${esc(p.day)} · ${esc(p.time)} · ${esc(boyName(p.boy))}</div>
 <div>${t('by')}: ${t(p.by)} · ${t('for')}: ${esc(p.fo)}</div><div>${t('frm')}: ${t(p.fr)}</div><div>${t('recv')}: ${m(p.r)}${p.hb?` · ${t('bill')}: ${m(p.b)}`:''}</div>${p.hb&&!p.later?`<div>${t('rem')}: <b>${m(pRem(p))}</b>${p.ret?' ✓':''}</div>`:''}${p.n?`<div class="m">${esc(p.n)}</div>`:''}
 ${acts?`<div class="row">${!p.hb?`<button class="p" data-a="pb" data-id="${p.id}">🧾 ${t('enterBill')}</button>`:''}<button data-a="pi" data-id="${p.id}">📷 ${t(p.img?'upload':'takePhoto')}</button>${p.img?`<button data-a="pv" data-id="${p.id}">🖼 ${t('view')}</button>`:''}${s==='toReturn'?`<button class="ok" data-a="pr" data-id="${p.id}">↩ ${t('retMoney')}</button>`:''}${s==='pendPay'?`<button class="ok" data-a="pp" data-id="${p.id}">💵 ${t('recvB')}</button>`:''}</div>`:''}</div>`}
-const secs=()=>[['dash','🏠'],['neworder','➕'],['manual','✍'],['orders','🍽'],['buy','🛒'],['pend','⏳'],['office','🧾'],['rec'],['📚'],['notif','🔔'],['boys','🧑‍💼'],['set','⚙️']];
+const secs=()=>[['dash','🏠'],['neworder','➕'],['manual','✍'],['orders','🍽'],['buy','🛒'],['pend','⏳'],['office','🧾'],['rec','📚'],['notif','🔔'],['boys','🧑‍💼'],['set','⚙️']];
 function periodUI(){const fl=['today','yest','week','month','year','custom'];return`<select id="fl">${fl.map(f=>`<option value="${f}"${f===flt?' selected':''}>${t(f)}</option>`).join('')}</select>${flt==='custom'?`<div class="row"><input type="date" id="cf" value="${cf}"><input type="date" id="ct" value="${ct}"></div>`:''}`}
 function donut(it){const T=it.reduce((a,x)=>a+x.v,0),R=40,C=2*Math.PI*R;let off=0;const seg=T?it.filter(x=>x.v>0).map(x=>{const L=C*x.v/T,s=`<circle r="${R}" cx="60" cy="60" fill="none" stroke="${x.c}" stroke-width="20" stroke-dasharray="${L} ${C-L}" stroke-dashoffset="${-off}" transform="rotate(-90 60 60)"/>`;off+=L;return s}).join(''):`<circle r="${R}" cx="60" cy="60" fill="none" stroke="var(--b)" stroke-width="20"/>`;
 return`<div class="card" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;justify-content:center"><svg viewBox="0 0 120 120" width="150" height="150">${seg}<text x="60" y="67" text-anchor="middle" font-size="24" font-weight="800" fill="var(--t)">${T}</text></svg><div>${it.map(x=>`<div><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${x.c};margin-inline-end:8px"></span>${x.l}: <b>${x.v}</b></div>`).join('')}</div></div>`}
@@ -253,8 +253,8 @@ w.querySelector('#sx').onclick=()=>w.remove();w.querySelector('#swi').onclick=()
 w.querySelector('#sw').onclick=()=>window.open('https://wa.me/'+ph+'?text='+encodeURIComponent(s),'_blank');
 w.querySelector('#ss').onclick=()=>{location.href='sms:'+ph+'?body='+encodeURIComponent(s)};
 w.querySelector('#sh').onclick=()=>{if(navigator.share)navigator.share({text:s}).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(s).then(()=>toast(t('copied')))};
-w.querySelector('#sp').onclick=()=>{const p=document.createElement('div');p.id='pr';p.innerHTML='<pre dir="auto">'+esc(s)+'</pre>';document.body.appendChild(p);window.print();setTimeout(()=>p.remove(),800)}}
-function printHtml(html,title){const p=document.createElement('div');p.id='pr';p.innerHTML=html;document.body.appendChild(p);const ot=document.title;document.title=title||ot;window.print();setTimeout(()=>{p.remove();document.title=ot},800)}
+w.querySelector('#sp').onclick=()=>{const p=document.createElement('div');p.id='pr';p.className=S.printStyle||'pro';p.innerHTML='<pre dir="auto">'+esc(s)+'</pre>';document.body.appendChild(p);window.print();setTimeout(()=>p.remove(),800)}}
+function printHtml(html,title){const p=document.createElement('div');p.id='pr';p.className=S.printStyle||'pro';p.innerHTML=html;document.body.appendChild(p);const ot=document.title;document.title=title||ot;window.print();setTimeout(()=>{p.remove();document.title=ot},800)}
 function yes(msg,cb){const w=document.createElement('div');w.className='ov';w.innerHTML=`<div><h2>${esc(msg)}</h2><div class="row"><button class="ok" id="y">${t('yesB')}</button><button id="n">${t('noB')}</button></div></div>`;document.body.appendChild(w);w.querySelector('#n').onclick=()=>w.remove();w.querySelector('#y').onclick=async()=>{w.remove();cb();await save();draw()}}
 function cxFlow(o){yes(o.r>0?t('refundQ')+' '+m(o.r)+' → '+o.e:t('sure'),()=>{const s=stamp();o.x=1;o.cxr=o.r;o.cxd=s.date;o.cxt=s.time})}
 function go(p){if(p!==page){hist.push(page);try{history.pushState(null,'');hp=1}catch(e){}}page=p;nav=false;draw();scrollTo(0,0)}
@@ -266,7 +266,20 @@ addEventListener('popstate',()=>{if(hist.length)goBack()});
 const find=(a,id)=>S[a].find(x=>x.id===id);
 let tsx=0,tsy=0;
 document.addEventListener('touchstart',e=>{tsx=e.changedTouches[0].screenX;tsy=e.changedTouches[0].screenY},{passive:true});
-document.addEventListener('touchend',e=>{const dx=e.changedTouches[0].screenX-tsx,dy=e.changedTouches[0].screenY-tsy;if(Math.abs(dx)>50&&Math.abs(dy)<50){if(dx>0&&tsx<50&&!nav){nav=true;bell=false;draw()}else if(dx<0&&nav){nav=false;draw()}}},{passive:true});
+document.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].screenX-tsx;
+  const dy=e.changedTouches[0].screenY-tsy;
+  if(Math.abs(dx)>60&&Math.abs(dy)<50){
+    const isRtl=document.documentElement.dir==='rtl';
+    if(!nav){
+      if(!isRtl&&dx>60&&tsx<50){nav=true;bell=false;draw()}
+      else if(isRtl&&dx<-60&&tsx>window.innerWidth-50){nav=true;bell=false;draw()}
+    }else{
+      if(!isRtl&&dx<-60){nav=false;draw()}
+      else if(isRtl&&dx>60){nav=false;draw()}
+    }
+  }
+},{passive:true});
 document.addEventListener('click',async ev=>{const e=ev.target.closest('[data-a],[data-go],[data-lang],[data-tab]');if(!e)return;const d=e.dataset;
 if(d.go){ev.preventDefault();return go(d.go)}if(d.lang){S.lang=d.lang;await save();return draw()}if(d.tab){tab=d.tab;return draw()}
 const id=d.id,o=find('orders',id),p=find('purch',id);
