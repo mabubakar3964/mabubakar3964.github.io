@@ -37,7 +37,6 @@ export default {
 
     if (url.pathname.startsWith('/api/config')) {
       try {
-        // 1. PULL SETTINGS (GET)
         if (url.pathname === '/api/config' && request.method === 'GET') {
           const row = await env.DB.prepare('SELECT settings, password_hash, password_version, updated_at FROM app_config WHERE id = 1').first<any>();
           if (!row) return json({ ok: false, error: 'DB not initialized' }, 500);
@@ -51,7 +50,6 @@ export default {
           });
         }
 
-        // 2. VERIFY CODE (POST)
         if (url.pathname === '/api/config/verify' && request.method === 'POST') {
           const body: any = await request.json().catch(() => ({}));
           if (!await verifyCode(env, body.code)) return json({ ok: false, error: 'Wrong code' }, 401);
@@ -59,7 +57,6 @@ export default {
           return json({ ok: true, pwv: row.password_version });
         }
 
-        // 3. SAVE SETTINGS (POST)
         if (url.pathname === '/api/config/save' && request.method === 'POST') {
           const body: any = await request.json().catch(() => ({}));
           if (!await verifyCode(env, body.code)) return json({ ok: false, error: 'Wrong code' }, 401);
@@ -79,7 +76,6 @@ export default {
           });
         }
 
-        // 4. CHANGE PASSWORD (POST)
         if (url.pathname === '/api/config/password' && request.method === 'POST') {
           const body: any = await request.json().catch(() => ({}));
           if (!await verifyCode(env, body.code)) return json({ ok: false, error: 'Wrong code' }, 401);
@@ -96,27 +92,37 @@ export default {
           const row = await env.DB.prepare('SELECT password_version FROM app_config WHERE id = 1').first<any>();
           return json({ ok: true, pwv: row.password_version });
         }
-// --- SYNC ORDERS & PURCHASES ---
-if (url.pathname === '/api/sync/pull' && request.method === 'GET') {
-  const orders = await env.DB.prepare('SELECT id, data FROM orders').all();
-  const purchases = await env.DB.prepare('SELECT id, data FROM purchases').all();
-  return json({ ok: true, orders: orders.results || [], purchases: purchases.results || [] });
-}
 
-if (url.pathname === '/api/sync/push' && request.method === 'POST') {
-  const body: any = await request.json().catch(() => ({}));
-  if (!body || !body.type || !body.records) return json({ ok: false, error: 'Invalid data' }, 400);
-  
-  const table = body.type === 'orders' ? 'orders' : 'purchases';
-  const now = Date.now();
-  const stmt = env.DB.prepare(`INSERT OR REPLACE INTO ${table} (id, data, updated_at) VALUES (?, ?, ?)`);
-  
-  const batch = body.records.map((r: any) => stmt.bind(r.id, JSON.stringify(r), now));
-  if (batch.length > 0) await env.DB.batch(batch);
-  
-  return json({ ok: true });
-}
         return json({ ok: false, error: 'Not found' }, 404);
+      } catch (e: any) {
+        return json({ ok: false, error: e.message }, 500);
+      }
+    }
+
+    // --- SYNC ROUTES ---
+    if (url.pathname === '/api/sync/pull' && request.method === 'GET') {
+      try {
+        const orders = await env.DB.prepare('SELECT id, data FROM orders').all();
+        const purchases = await env.DB.prepare('SELECT id, data FROM purchases').all();
+        return json({ ok: true, orders: orders.results || [], purchases: purchases.results || [] });
+      } catch (e: any) {
+        return json({ ok: false, error: e.message }, 500);
+      }
+    }
+
+    if (url.pathname === '/api/sync/push' && request.method === 'POST') {
+      try {
+        const body: any = await request.json().catch(() => ({}));
+        if (!body || !body.type || !body.records) return json({ ok: false, error: 'Invalid data' }, 400);
+        
+        const table = body.type === 'orders' ? 'orders' : 'purchases';
+        const now = Date.now();
+        const stmt = env.DB.prepare(`INSERT OR REPLACE INTO ${table} (id, data, updated_at) VALUES (?, ?, ?)`);
+        
+        const batch = body.records.map((r: any) => stmt.bind(r.id, JSON.stringify(r), now));
+        if (batch.length > 0) await env.DB.batch(batch);
+        
+        return json({ ok: true });
       } catch (e: any) {
         return json({ ok: false, error: e.message }, 500);
       }
