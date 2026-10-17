@@ -96,7 +96,26 @@ export default {
           const row = await env.DB.prepare('SELECT password_version FROM app_config WHERE id = 1').first<any>();
           return json({ ok: true, pwv: row.password_version });
         }
+// --- SYNC ORDERS & PURCHASES ---
+if (url.pathname === '/api/sync/pull' && request.method === 'GET') {
+  const orders = await env.DB.prepare('SELECT id, data FROM orders').all();
+  const purchases = await env.DB.prepare('SELECT id, data FROM purchases').all();
+  return json({ ok: true, orders: orders.results || [], purchases: purchases.results || [] });
+}
 
+if (url.pathname === '/api/sync/push' && request.method === 'POST') {
+  const body: any = await request.json().catch(() => ({}));
+  if (!body || !body.type || !body.records) return json({ ok: false, error: 'Invalid data' }, 400);
+  
+  const table = body.type === 'orders' ? 'orders' : 'purchases';
+  const now = Date.now();
+  const stmt = env.DB.prepare(`INSERT OR REPLACE INTO ${table} (id, data, updated_at) VALUES (?, ?, ?)`);
+  
+  const batch = body.records.map((r: any) => stmt.bind(r.id, JSON.stringify(r), now));
+  if (batch.length > 0) await env.DB.batch(batch);
+  
+  return json({ ok: true });
+}
         return json({ ok: false, error: 'Not found' }, 404);
       } catch (e: any) {
         return json({ ok: false, error: e.message }, 500);
