@@ -1,0 +1,19 @@
+{
+  "name": "office-lunch-manage",
+  "main": "src/worker.ts",
+  "compatibility_date": "2025-02-04",
+  "observability": { "enabled": true },
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "office-boy-db",
+      "database_id": "85d1032b",
+      "migrations_dir": "migrations"
+    }
+  ]
+}
